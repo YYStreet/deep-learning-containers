@@ -26,7 +26,7 @@
   images:
     BuildEIAPTInferencePy3DockerImage:
       <<: *INFERENCE_REPOSITORY
-      build: &PYTORCH_EIA_INFERENCE_PY3 false
+      build: &PYTORCH_CPU_INFERENCE_PY3 false
       image_size_baseline: 4899
       device_type: &DEVICE_TYPE eia
       python_version: &DOCKER_PYTHON_VERSION py3
