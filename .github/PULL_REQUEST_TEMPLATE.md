@@ -9,12 +9,12 @@
 
 #### EIA Checklist
 * When creating a PR:
-- [ ] I've modified ```src/config/build_config.py``` in my PR branch by setting `ENABLE_EI_MODE = True`
+- [ ] I've modified `src/config/build_config.py` in my PR branch by setting `ENABLE_EI_MODE = True`
 * When PR is reviewed and ready to be merged:
 - [ ] I've reverted the code change on the config file mentioned above
 #### Benchmark Checklist
 * When creating a PR:
-- [ ] I've modified ```src/config/test_config.py``` in my PR branch by setting `ENABLE_BENCHMARK_DEV_MODE = True`
+- [ ] I've modified `src/config/test_config.py` in my PR branch by setting `ENABLE_BENCHMARK_DEV_MODE = True`
 * When PR is reviewed and ready to be merged:
 - [ ] I've reverted the code change on the config file mentioned above
 
