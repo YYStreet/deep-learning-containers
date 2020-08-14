@@ -2,7 +2,7 @@ import os
 import re
 import pytest
 
-from test.test_utils import CONTAINER_TESTS_PREFIX, is_tf2
+from test.test_utils import CONTAINER_TESTS_PREFIX, SKIP_PR_BENCHMARK_REASON, is_tf2, is_pr_context
 from test.test_utils.ec2 import execute_ec2_training_performance_test
 from src.benchmark_metrics import TENSORFLOW2_TRAINING_CPU_SYNTHETIC_THRESHOLD, \
     TENSORFLOW2_TRAINING_GPU_SYNTHETIC_THRESHOLD, TENSORFLOW2_TRAINING_GPU_IMAGENET_THRESHOLD, \
@@ -28,6 +28,7 @@ def test_performance_tensorflow_cpu(tensorflow_training, ec2_connection, cpu_onl
                                           data_source="synthetic", threshold={"Throughput": threshold})
 
 
+# @pytest.mark.skipif(is_pr_context(), reason=SKIP_PR_BENCHMARK_REASON)
 @pytest.mark.integration("synthetic dataset")
 @pytest.mark.model("resnet50")
 @pytest.mark.parametrize("ec2_instance_type", [TF_EC2_GPU_INSTANCE_TYPE], indirect=True)
@@ -40,6 +41,7 @@ def test_performance_tensorflow_gpu_synthetic(tensorflow_training, ec2_connectio
                                           data_source="synthetic", threshold={"Throughput": threshold})
 
 
+# @pytest.mark.skipif(is_pr_context(), reason=SKIP_PR_BENCHMARK_REASON)
 @pytest.mark.integration("imagenet dataset")
 @pytest.mark.model("resnet50")
 @pytest.mark.parametrize("ec2_instance_type", [TF_EC2_GPU_INSTANCE_TYPE], indirect=True)

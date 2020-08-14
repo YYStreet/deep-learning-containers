@@ -14,6 +14,8 @@ from invoke import run
 from invoke.context import Context
 from retrying import retry
 
+from src.config.test_config import ENABLE_BENCHMARK_DEV_MODE
+
 LOGGER = logging.getLogger(__name__)
 LOGGER.setLevel(logging.INFO)
 LOGGER.addHandler(logging.StreamHandler(sys.stderr))
@@ -49,6 +51,11 @@ SKIP_PR_REASON = "Skipping test in PR context to speed up iteration time. Test w
 
 # Reason string for skipping tests in non-PR context
 PR_ONLY_REASON = "Skipping test that doesn't need to be run outside of PR context."
+
+# Reason string for skipping benchmark tests in PR context, even in benchmark_dev_context
+SKIP_PR_BENCHMARK_REASON = "Skipping this test even benchmark dev_context is enabled, " \
+                           "since it is taking too long time to complete in PR context. " \
+                           "Test will be run in nightly/release pipeline."
 
 KEYS_TO_DESTROY_FILE = os.path.join(os.sep, "tmp", "keys_to_destroy.txt")
 
@@ -95,6 +102,10 @@ def is_empty_build_context():
 
 def is_dlc_cicd_context():
     return os.getenv("BUILD_CONTEXT") in ["PR", "CANARY", "NIGHTLY", "MAINLINE"]
+
+
+def is_benchmark_dev_context():
+    return is_pr_context() and ENABLE_BENCHMARK_DEV_MODE
 
 
 def run_subprocess_cmd(cmd, failure="Command failed"):

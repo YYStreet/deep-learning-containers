@@ -3,7 +3,8 @@ import time
 import pytest
 import re
 
-from test.test_utils import CONTAINER_TESTS_PREFIX, PT_GPU_PY3_BENCHMARK_IMAGENET_AMI_US_WEST_2, DEFAULT_REGION
+from test.test_utils import CONTAINER_TESTS_PREFIX, PT_GPU_PY3_BENCHMARK_IMAGENET_AMI_US_WEST_2, DEFAULT_REGION, \
+    SKIP_PR_BENCHMARK_REASON, is_pr_context
 from test.test_utils.ec2 import execute_ec2_training_performance_test, \
     ec2_performance_upload_result_to_s3_and_validate_performance
 from src.benchmark_metrics import PYTORCH_TRAINING_GPU_SYNTHETIC_THRESHOLD, PYTORCH_TRAINING_GPU_IMAGENET_THRESHOLD
@@ -25,7 +26,8 @@ def test_performance_pytorch_gpu_synthetic(pytorch_training, ec2_connection, gpu
                                           data_source="synthetic",
                                           threshold={"Throughput": PYTORCH_TRAINING_GPU_SYNTHETIC_THRESHOLD})
 
-@pytest.mark.skip()
+
+# @pytest.mark.skipif(is_pr_context(), reason=SKIP_PR_BENCHMARK_REASON)
 @pytest.mark.model("resnet50")
 @pytest.mark.parametrize("ec2_instance_ami", [PT_GPU_PY3_BENCHMARK_IMAGENET_AMI_US_WEST_2], indirect=True)
 @pytest.mark.parametrize("ec2_instance_type", [PT_EC2_GPU_IMAGENET_INSTANCE_TYPE], indirect=True)
