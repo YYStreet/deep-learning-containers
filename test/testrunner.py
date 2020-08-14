@@ -13,7 +13,6 @@ import pytest
 from botocore.config import Config
 from invoke import run
 from invoke.context import Context
-from src.config.test_config import ENABLE_ONLY_BENCHMARK_TESTS
 from test_utils import eks as eks_utils
 from test_utils import sagemaker as sm_utils
 from test_utils import metrics as metrics_utils
