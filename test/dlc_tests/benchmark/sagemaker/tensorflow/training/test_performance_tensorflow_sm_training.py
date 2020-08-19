@@ -7,19 +7,12 @@ from random import Random
 import pytest
 
 from invoke.context import Context
-<<<<<<< HEAD
-from src.benchmark_metrics import TENSORFLOW2_SM_TRAINING_CPU_1NODE_THRESHOLD, \
-    TENSORFLOW2_SM_TRAINING_CPU_4NODE_THRESHOLD, \
-    TENSORFLOW2_SM_TRAINING_GPU_1NODE_THRESHOLD, \
-    TENSORFLOW2_SM_TRAINING_GPU_4NODE_THRESHOLD
-=======
 from src.benchmark_metrics import (
     TENSORFLOW2_SM_TRAINING_CPU_1NODE_THRESHOLD,
     TENSORFLOW2_SM_TRAINING_CPU_4NODE_THRESHOLD,
     TENSORFLOW2_SM_TRAINING_GPU_1NODE_THRESHOLD,
     TENSORFLOW2_SM_TRAINING_GPU_4NODE_THRESHOLD,
 )
->>>>>>> 2f5f0408b5ae5e4e8843ded35200c07382ca0732
 from test.test_utils import BENCHMARK_RESULTS_S3_BUCKET, LOGGER, is_tf1
 
 
@@ -111,13 +104,9 @@ def test_tensorflow_sagemaker_training_performance(
         f"Test results can be found at {os.path.join(target_upload_location, log_file)}"
     )
 
-<<<<<<< HEAD
-    result_statement, throughput = _print_results_of_test(os.path.join(test_dir, log_file), processor)
-=======
     result_statement, throughput = _print_results_of_test(
         os.path.join(test_dir, log_file), processor
     )
->>>>>>> 2f5f0408b5ae5e4e8843ded35200c07382ca0732
     throughput /= num_nodes
 
     assert run_out.ok, (
@@ -145,53 +134,27 @@ def test_tensorflow_sagemaker_training_performance(
         f"Benchmark Result {throughput} does not reach the threshold {threshold}"
     )
 
-    threshold = (TENSORFLOW2_SM_TRAINING_CPU_1NODE_THRESHOLD if num_nodes == 1
-                 else TENSORFLOW2_SM_TRAINING_CPU_4NODE_THRESHOLD) \
-        if processor == "cpu" \
-        else TENSORFLOW2_SM_TRAINING_GPU_1NODE_THRESHOLD if num_nodes == 1 \
-        else TENSORFLOW2_SM_TRAINING_GPU_4NODE_THRESHOLD
-    assert throughput > threshold, \
-        f"tensorflow {framework_version} sagemaker training {processor} {py_version} imagenet {num_nodes} nodes " \
-        f"Benchmark Result {throughput} does not reach the threshold {threshold}"
-
 
 def _print_results_of_test(file_path, processor):
     last_100_lines = Context().run(f"tail -100 {file_path}").stdout.split("\n")
     result = ""
-<<<<<<< HEAD
-    total = 0.0
-    count = 0
-=======
     throughput = 0
->>>>>>> 2f5f0408b5ae5e4e8843ded35200c07382ca0732
     if processor == "cpu":
         for line in last_100_lines:
             if "Total img/sec on " in line:
                 result = line + "\n"
-<<<<<<< HEAD
-                total += float(re.search(r'(images/sec:[ ]*)(?P<throughput>[0-9]+\.?[0-9]+)', line).group("throughput"))
-                count += 1
-=======
                 throughput = float(
                     re.search(
                         r"(CPU\(s\):[ ]*)(?P<throughput>[0-9]+\.?[0-9]+)", line
                     ).group("throughput")
                 )
                 break
->>>>>>> 2f5f0408b5ae5e4e8843ded35200c07382ca0732
     elif processor == "gpu":
         result_dict = dict()
         for line in last_100_lines:
             if "images/sec: " in line:
                 key = line.split("<stdout>")[0]
                 result_dict[key] = line.strip("\n")
-<<<<<<< HEAD
-                total = float(re.search(r'(images/sec:[ ]*)(?P<throughput>[0-9]+\.?[0-9]+)', line).group("throughput"))
-                count += 1
-        result = "\n".join(result_dict.values()) + "\n"
-    LOGGER.info(result)
-    return result, total / count
-=======
                 if throughput == 0:
                     throughput = float(
                         re.search(
@@ -201,4 +164,3 @@ def _print_results_of_test(file_path, processor):
         result = "\n".join(result_dict.values()) + "\n"
     LOGGER.info(result)
     return result, throughput
->>>>>>> 2f5f0408b5ae5e4e8843ded35200c07382ca0732
