@@ -35,9 +35,7 @@ def get_ec2_instance_type(default, processor, disable_p3dn=False):
             f"Please choose from {allowed_processors}"
         )
     if default == p3dn:
-        raise RuntimeError(
-            "Default instance type should never be p3dn.24xlarge"
-        )
+        raise RuntimeError("Default instance type should never be p3dn.24xlarge")
     instance_type = os.getenv(f"EC2_{processor.upper()}_INSTANCE_TYPE", default)
     if instance_type == p3dn and disable_p3dn:
         instance_type = default
@@ -55,7 +53,7 @@ def get_ec2_accelerator_type(default, processor):
     :return: one item list of instance type -- this is used to parametrize tests, and parameter is required to be
     a list.
     """
-    allowed_processors = ("eia")
+    allowed_processors = "eia"
     if processor not in allowed_processors:
         raise RuntimeError(
             f"Aborting EC2 test run. Unrecognized processor type {processor}. "
@@ -66,8 +64,14 @@ def get_ec2_accelerator_type(default, processor):
 
 
 def launch_instance(
-        ami_id, instance_type, ei_accelerator_type, ec2_key_name=None, region=DEFAULT_REGION, user_data=None,
-        iam_instance_profile_name=None, instance_name=""
+    ami_id,
+    instance_type,
+    ei_accelerator_type,
+    ec2_key_name=None,
+    region=DEFAULT_REGION,
+    user_data=None,
+    iam_instance_profile_name=None,
+    instance_name="",
 ):
     """
     Launch an instance
@@ -93,7 +97,7 @@ def launch_instance(
         "MaxCount": 1,
         "MinCount": 1,
         "TagSpecifications": [
-            {"ResourceType": "instance", "Tags": [{"Key": "Name", "Value": f"CI-CD {instance_name}"}]},
+            {"ResourceType": "instance", "Tags": [{"Key": "Name", "Value": f"CI-CD {instance_name}"}],},
         ],
     }
     if user_data:
@@ -102,15 +106,15 @@ def launch_instance(
         arguments_dict["IamInstanceProfile"] = {"Name": iam_instance_profile_name}
     if ei_accelerator_type:
         arguments_dict["ElasticInferenceAccelerators"] = ei_accelerator_type
-        availability_zones = {"us-west": ["us-west-2a", "us-west-2b", "us-west-2c"],
-                              "us-east": ["us-east-1a", "us-east-1b", "us-east-1c"]}
+        availability_zones = {
+            "us-west": ["us-west-2a", "us-west-2b", "us-west-2c"],
+            "us-east": ["us-east-1a", "us-east-1b", "us-east-1c"],
+        }
         for a_zone in availability_zones[region]:
-            arguments_dict["Placement"] = {
-                'AvailabilityZone': a_zone
-            }
+            arguments_dict["Placement"] = {"AvailabilityZone": a_zone}
             try:
                 response = client.run_instances(**arguments_dict)
-                if response and len(response['Instances']) >= 1:
+                if response and len(response["Instances"]) >= 1:
                     break
             except ClientError as e:
                 print(f"Failed to launch in {a_zone} with Error: {e}")
@@ -128,7 +132,7 @@ def launch_instance(
 
 
 def get_ec2_client(region):
-    return boto3.client("ec2", region_name=region, config=Config(retries={'max_attempts': 10}))
+    return boto3.client("ec2", region_name=region, config=Config(retries={"max_attempts": 10}))
 
 
 def get_instance_from_id(instance_id, region=DEFAULT_REGION):
@@ -382,20 +386,25 @@ def get_ec2_fabric_connection(instance_id, instance_pem_file, region):
     """
     user = get_instance_user(instance_id, region=region)
     conn = Connection(
-        user=user,
-        host=get_public_ip(instance_id, region),
-        connect_kwargs={"key_filename": [instance_pem_file]}
+        user=user, host=get_public_ip(instance_id, region), connect_kwargs={"key_filename": [instance_pem_file]},
     )
     return conn
 
 
-def execute_ec2_training_test(connection, ecr_uri, test_cmd, region=DEFAULT_REGION, executable="bash", large_shm=False,
-                              host_network=False,
-                              container_name='ec2_training_container'):
+def execute_ec2_training_test(
+    connection,
+    ecr_uri,
+    test_cmd,
+    region=DEFAULT_REGION,
+    executable="bash",
+    large_shm=False,
+    host_network=False,
+    container_name="ec2_training_container",
+):
     if executable not in ("bash", "python"):
         raise RuntimeError(f"This function only supports executing bash or python commands on containers")
     if executable == "bash":
-        executable = os.path.join(os.sep, 'bin', 'bash')
+        executable = os.path.join(os.sep, "bin", "bash")
     docker_cmd = "nvidia-docker" if "gpu" in ecr_uri else "docker"
     container_test_local_dir = os.path.join("$HOME", "container_tests")
 
@@ -411,9 +420,7 @@ def execute_ec2_training_test(connection, ecr_uri, test_cmd, region=DEFAULT_REGI
         hide=True,
     )
     return connection.run(
-        f"{docker_cmd} exec --user root {container_name} {executable} -c '{test_cmd}'",
-        hide=True,
-        timeout=3000,
+        f"{docker_cmd} exec --user root {container_name} {executable} -c '{test_cmd}'", hide=True, timeout=3000,
     )
 
 
@@ -437,12 +444,13 @@ def execute_ec2_inference_test(connection, ecr_uri, test_cmd, region=DEFAULT_REG
     )
 
 
-def execute_ec2_training_performance_test(connection, ecr_uri, test_cmd, region=DEFAULT_REGION,
-                                          post_process=None, data_source="", threshold=None):
+def execute_ec2_training_performance_test(
+    connection, ecr_uri, test_cmd, region=DEFAULT_REGION, post_process=None, data_source="", threshold=None,
+):
     docker_cmd = "nvidia-docker" if "gpu" in ecr_uri else "docker"
     container_test_local_dir = os.path.join("$HOME", "container_tests")
 
-    timestamp = time.strftime('%Y-%m-%d-%H-%M-%S')
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     log_name = f"{data_source}_results_{os.getenv('CODEBUILD_RESOLVED_SOURCE_VERSION')}_{timestamp}.txt"
     log_location = os.path.join(container_test_local_dir, "benchmark", "logs", log_name)
 
@@ -458,15 +466,17 @@ def execute_ec2_training_performance_test(connection, ecr_uri, test_cmd, region=
         f"-v {container_test_local_dir}:{os.path.join(os.sep, 'test')} {ecr_uri} "
         f"{os.path.join(os.sep, 'bin', 'bash')} -c {test_cmd}"
     )
-    ec2_performance_upload_result_to_s3_and_validate_performance(connection, ecr_uri, log_location, data_source,
-                                                                 threshold, post_process, log_name)
+    ec2_performance_upload_result_to_s3_and_validate(
+        connection, ecr_uri, log_location, data_source, threshold, post_process, log_name,
+    )
 
 
-def execute_ec2_inference_performance_test(connection, ecr_uri, test_cmd, region=DEFAULT_REGION,
-                                           post_process=None, data_source="", threshold=None):
+def execute_ec2_inference_performance_test(
+    connection, ecr_uri, test_cmd, region=DEFAULT_REGION, post_process=None, data_source="", threshold=None,
+):
     docker_cmd = "nvidia-docker" if "gpu" in ecr_uri else "docker"
     container_test_local_dir = os.path.join("$HOME", "container_tests")
-    timestamp = time.strftime('%Y-%m-%d-%H-%M-%S')
+    timestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
     log_name = f"{data_source}_results_{os.getenv('CODEBUILD_RESOLVED_SOURCE_VERSION')}_{timestamp}.txt"
     # Make sure we are logged into ECR so we can pull the image
     connection.run(f"$(aws ecr get-login --no-include-email --region {region})", hide=True)
@@ -482,63 +492,71 @@ def execute_ec2_inference_performance_test(connection, ecr_uri, test_cmd, region
     )
     try:
         connection.run(
-            f"{docker_cmd} exec --user root {container_name} " f"{os.path.join(os.sep, 'bin', 'bash')} -c {test_cmd}")
+            f"{docker_cmd} exec --user root {container_name} " f"{os.path.join(os.sep, 'bin', 'bash')} -c {test_cmd}"
+        )
     except Exception as e:
         raise Exception("Failed to exec benchmark command.\n", e)
     finally:
         connection.run(f"docker rm -f {container_name}")
     log_location = os.path.join(container_test_local_dir, "benchmark", "logs", log_name)
-    ec2_performance_upload_result_to_s3_and_validate_performance(connection, ecr_uri, log_location, data_source,
-                                                                 threshold, post_process, log_name)
+    ec2_performance_upload_result_to_s3_and_validate(
+        connection, ecr_uri, log_location, data_source, threshold, post_process, log_name,
+    )
 
 
-def ec2_performance_upload_result_to_s3_and_validate_performance(connection, ecr_uri, log_location,
-                                                                 data_source, threshold, post_process, log_name):
+def ec2_performance_upload_result_to_s3_and_validate(
+    connection, ecr_uri, log_location, data_source, threshold, post_process, log_name
+):
     framework = "tensorflow" if "tensorflow" in ecr_uri else "mxnet" if "mxnet" in ecr_uri else "pytorch"
-    framework_version = re.search(r"[0-9]+(\.\d+){2}", ecr_uri).group()
+    framework_version = re.search(r"\d+(\.\d+){2}", ecr_uri).group()
     py_version = "py2" if "py2" in ecr_uri else "py37" if "py37" in ecr_uri else "py3"
     processor = "gpu" if "gpu" in ecr_uri else "cpu"
     work_type = "training" if "training" in ecr_uri else "inference"
     s3_location = os.path.join(
-        BENCHMARK_RESULTS_S3_BUCKET, framework, framework_version, "ec2", work_type, processor, py_version, log_name
+        BENCHMARK_RESULTS_S3_BUCKET, framework, framework_version, "ec2", work_type, processor, py_version, log_name,
     )
     params = {"connection": connection, "log_location": log_location}
     if "threshold" in signature(post_process).parameters:
         params["threshold"] = threshold
     performance_number = post_process(**params)
-    unit = "s p99 latency" if work_type == "inference" and framework == "tensorflow" \
-        else "ms p99 latency" if work_type == "inference" and framework == "pytorch" \
-        else "s/epoch" if work_type == "training" and framework == "pytorch" and data_source == "imagenet" \
+    unit = (
+        "s"
+        if work_type == "inference" and framework == "tensorflow"
+        else "ms"
+        if work_type == "inference" and framework == "pytorch"
+        else "s/epoch"
+        if work_type == "training" and framework == "pytorch" and data_source == "imagenet"
         else "images/sec"
+    )
+    description = "p99 latency " if unit == "s" or unit == "ms" else ""
     for k, v in performance_number.items():
-        performance_statement = f"{framework} {framework_version} ec2 {work_type} {processor} {py_version} " \
-                                f"{data_source} {k}: {v} {unit}"
-        connection.run(
-            f"echo {performance_statement} | sudo tee -a {log_location}")
-        LOGGER.info(
-            f"{performance_statement}")
-    connection.run(
-        f"aws s3 cp {log_location} {s3_location}")
-    connection.run(
-        f"echo To retrieve complete benchmark log, check {s3_location} >&2")
+        performance_statement = (
+            f"{framework} {framework_version} ec2 {work_type} {processor} {py_version} "
+            f"{data_source} {k} {description}: {v} {unit}, threshold: {threshold[k]} {unit}"
+        )
+        connection.run(f"echo {performance_statement} | sudo tee -a {log_location}")
+        LOGGER.info(f"{performance_statement}")
+    connection.run(f"aws s3 cp {log_location} {s3_location}")
+    connection.run(f"echo To retrieve complete benchmark log, check {s3_location} >&2")
 
-    def _assertion_results(_performance_number, _unit, _threshold):
+    def _assertion_results():
         if "Cost" in performance_number:
-            return _performance_number["Cost"] < _threshold["Cost"]
+            return performance_number["Cost"] < threshold["Cost"]
         if "Throughput" in performance_number:
-            return _performance_number["Throughput"] > _threshold["Throughput"]
+            return performance_number["Throughput"] > threshold["Throughput"]
         if len(performance_number) == 0:
             return False
         failure_count = 0
-        for _k, _v in performance_number.items():
-            if _v > _threshold[_k]:
+        for k, v in performance_number.items():
+            if v > threshold[k]:
                 failure_count += 1
         return failure_count <= 2
 
     for _ in performance_number:
-        assert _assertion_results(performance_number, unit, threshold), \
-            f"{framework} {framework_version} ec2 {work_type} {processor} {py_version} {data_source} " \
+        assert _assertion_results(), (
+            f"{framework} {framework_version} ec2 {work_type} {processor} {py_version} {data_source} "
             f"Benchmark Result {performance_number} does not reach the threshold {threshold}"
+        )
 
 
 def post_process_inference(connection, log_location, threshold):
@@ -548,8 +566,23 @@ def post_process_inference(connection, log_location, threshold):
         if "p99" in line:
             for key in threshold.keys():
                 if key in line:
-                    performance_number[key] = \
-                        float(re.search(r'(p99[ ]*(Latency)?[ ]*:[ ]*)(?P<result>[0-9]+\.?[0-9]+)', line)
-                              .group("result"))
+                    performance_number[key] = float(
+                        re.search(r"(p99[ ]*(Latency)?[ ]*:[ ]*)(?P<result>[0-9]+\.?[0-9]+)", line,).group("result")
+                    )
                     break
     return performance_number
+
+
+def post_process_mxnet_ec2_performance(connection, log_location):
+    log_content = connection.run(f"cat {log_location}").stdout.split("\n")
+    total = 0.0
+    n = 0
+    for line in log_content:
+        if "samples/sec" in line:
+            throughput = re.search(r"((?P<throughput>[0-9]+\.?[0-9]+)[ ]+samples/sec)", line).group("throughput")
+            total += float(throughput)
+            n += 1
+    if total and n:
+        return {"Throughput": total / n}
+    else:
+        raise ValueError("total: {}; n: {} -- something went wrong".format(total, n))
