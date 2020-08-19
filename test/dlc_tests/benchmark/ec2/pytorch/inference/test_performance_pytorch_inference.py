@@ -1,11 +1,19 @@
 import os
 import time
 import pytest
-from src.benchmark_metrics import PYTORCH_INFERENCE_GPU_THRESHOLD, PYTORCH_INFERENCE_CPU_THRESHOLD
+from src.benchmark_metrics import (
+    PYTORCH_INFERENCE_GPU_THRESHOLD,
+    PYTORCH_INFERENCE_CPU_THRESHOLD,
+)
 from test.test_utils import CONTAINER_TESTS_PREFIX
-from test.test_utils.ec2 import ec2_performance_upload_result_to_s3_and_validate_performance, post_process_inference
+from test.test_utils.ec2 import (
+    ec2_performance_upload_result_to_s3_and_validate,
+    post_process_inference,
+)
 
-PT_PERFORMANCE_INFERENCE_SCRIPT = os.path.join(CONTAINER_TESTS_PREFIX, "benchmark", "run_pytorch_inference_performance.py")
+PT_PERFORMANCE_INFERENCE_SCRIPT = os.path.join(
+    CONTAINER_TESTS_PREFIX, "benchmark", "run_pytorch_inference_performance.py"
+)
 PT_PERFORMANCE_INFERENCE_CPU_CMD = f"{PT_PERFORMANCE_INFERENCE_SCRIPT}  --iterations 500"
 PT_PERFORMANCE_INFERENCE_GPU_CMD = f"{PT_PERFORMANCE_INFERENCE_SCRIPT}  --iterations 1000 --gpu"
 
@@ -13,15 +21,27 @@ PT_PERFORMANCE_INFERENCE_GPU_CMD = f"{PT_PERFORMANCE_INFERENCE_SCRIPT}  --iterat
 @pytest.mark.model("resnet18, VGG13, MobileNetV2, GoogleNet, DenseNet121, InceptionV3")
 @pytest.mark.parametrize("ec2_instance_type", ["p3.16xlarge"], indirect=True)
 def test_performance_ec2_pytorch_inference_gpu(pytorch_inference, ec2_connection, region, gpu_only):
-    ec2_performance_pytorch_inference(pytorch_inference, "gpu", ec2_connection, region,
-                                      PT_PERFORMANCE_INFERENCE_GPU_CMD, PYTORCH_INFERENCE_GPU_THRESHOLD)
+    ec2_performance_pytorch_inference(
+        pytorch_inference,
+        "gpu",
+        ec2_connection,
+        region,
+        PT_PERFORMANCE_INFERENCE_GPU_CMD,
+        PYTORCH_INFERENCE_GPU_THRESHOLD,
+    )
 
 
 @pytest.mark.model("resnet18, VGG13, MobileNetV2, GoogleNet, DenseNet121, InceptionV3")
 @pytest.mark.parametrize("ec2_instance_type", ["c5.18xlarge"], indirect=True)
 def test_performance_ec2_pytorch_inference_cpu(pytorch_inference, ec2_connection, region, cpu_only):
-    ec2_performance_pytorch_inference(pytorch_inference, "cpu", ec2_connection, region,
-                                      PT_PERFORMANCE_INFERENCE_CPU_CMD, PYTORCH_INFERENCE_CPU_THRESHOLD)
+    ec2_performance_pytorch_inference(
+        pytorch_inference,
+        "cpu",
+        ec2_connection,
+        region,
+        PT_PERFORMANCE_INFERENCE_CPU_CMD,
+        PYTORCH_INFERENCE_CPU_THRESHOLD,
+    )
 
 
 def ec2_performance_pytorch_inference(image_uri, processor, ec2_connection, region, test_cmd, threshold):
@@ -34,7 +54,7 @@ def ec2_performance_pytorch_inference(image_uri, processor, ec2_connection, regi
 
     ec2_connection.run(f"{docker_cmd} pull -q {image_uri} ")
 
-    time_str = time.strftime('%Y-%m-%d-%H-%M-%S')
+    time_str = time.strftime("%Y-%m-%d-%H-%M-%S")
     commit_info = os.getenv("CODEBUILD_RESOLVED_SOURCE_VERSION")
     # Run performance inference command, display benchmark results to console
     container_name = f"{repo_name}-performance-{image_tag}-ec2"
@@ -43,13 +63,8 @@ def ec2_performance_pytorch_inference(image_uri, processor, ec2_connection, regi
         f"{docker_cmd} run -d --name {container_name}  -e OMP_NUM_THREADS=1 "
         f"-v {container_test_local_dir}:{os.path.join(os.sep, 'test')} {image_uri} "
     )
-    ec2_connection.run(
-        f"{docker_cmd} exec {container_name} "
-        f"python {test_cmd} "
-        f"2>&1 | tee {log_file}"
+    ec2_connection.run(f"{docker_cmd} exec {container_name} " f"python {test_cmd} " f"2>&1 | tee {log_file}")
+    ec2_connection.run(f"docker rm -f {container_name}")
+    ec2_performance_upload_result_to_s3_and_validate(
+        ec2_connection, image_uri, log_file, "synthetic", threshold, post_process_inference, log_file,
     )
-    ec2_connection.run(
-        f"docker rm -f {container_name}"
-    )
-    ec2_performance_upload_result_to_s3_and_validate_performance(ec2_connection, image_uri, log_file, "synthetic",
-                                                                 threshold, post_process_inference, log_file)
